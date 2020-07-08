@@ -5,7 +5,7 @@ import webbrowser
 from pathlib import Path
 
 from galaxy.api.plugin import Plugin, create_and_run_plugin
-from galaxy.api.consts import Platform, LicenseType, LocalGameState
+from galaxy.api.consts import Platform, LicenseType, LocalGameState, OSCompatibility
 from galaxy.api.types import Authentication, Game, LicenseInfo, LocalGame
 
 from version import __version__
@@ -142,6 +142,9 @@ class AmazonGamesPlugin(Plugin):
 
     async def shutdown_platform_client(self):
         self._client.stop_client()
+
+    async def get_os_compatibility(self, game_id, context):
+        return OSCompatibility.Windows
 
 def main():
     logging.info("Running Amazon plugin")
