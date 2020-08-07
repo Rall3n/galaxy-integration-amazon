@@ -110,6 +110,9 @@ def update_fog_release(c, output=str(FOG_RELEASE_PATH)):
     build_manifest(c, output=output)
     create_requirements_file(c, output=output)
 
+    print(f'[{colored("TASK", "yellow")}] Copying `current_version.json` ...')
+    shutil.copy2(str(Path(REPO_PATH, 'current_version.json')), output)
+
 
 @task
 def create_requirements_file(c, output=str(REPO_PATH)):
