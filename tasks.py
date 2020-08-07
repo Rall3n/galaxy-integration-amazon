@@ -6,7 +6,7 @@ import tempfile
 import shutil
 from termcolor import colored
 from pathlib import Path
-from distutils.dir_util import copy_tree
+from distutils.dir_util import copy_tree, remove_tree
 from glob import glob
 from fog import buildtools
 from galaxy.tools import zip_folder_to_file
@@ -17,6 +17,8 @@ from src.version import __version__
 
 REPO_PATH = Path(__file__).resolve().parent
 DIST_PATH = Path(REPO_PATH, "dist").resolve()
+SRC_PATH = Path(REPO_PATH, "src").resolve()
+FOG_RELEASE_PATH = Path(REPO_PATH, "fog_release").resolve()
 GALAXY_PATH = 'C:\\Program Files (x86)\\GOG Galaxy\\GalaxyClient.exe'
 PLUGIN_PATH = f"{os.environ['localappdata']}\\GOG.com\\Galaxy\\plugins\\installed\\amazon_dev"
 
@@ -98,3 +100,32 @@ def dist(c, archive_name=f'amazon_{PLUGIN_GUID}.zip'):
     update_changelog(c)
 
     zip_folder_to_file(str(DIST_PATH), archive_name)
+
+
+@task(optional=['output'])
+def update_fog_release(c, output=str(FOG_RELEASE_PATH)):
+    print(f'[{colored("TASK", "yellow")}] Pushing to fog_release branch ...')
+
+    copy_tree(str(SRC_PATH), output)
+    build_manifest(c, output=output)
+    create_requirements_file(c, output=output)
+
+
+@task
+def create_requirements_file(c, output=str(REPO_PATH)):
+    print(f'[{colored("TASK", "yellow")}] Generating `requirements.txt` from Pipfile.lock ...')
+    packages = []
+    root = None
+
+    with open(Path(REPO_PATH, 'Pipfile.lock')) as f:
+        root = json.load(f)
+
+    for name, pkg in root["default"].items():
+        if 'index' not in pkg:
+            continue
+
+        version = pkg["version"]
+        packages.append(f'{name}{version}')
+
+    with open(os.path.join(output, 'requirements.txt'), 'w') as _file:
+        _file.write('\n'.join(packages))
