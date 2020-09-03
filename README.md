@@ -1,7 +1,7 @@
 # GOG Galaxy 2.0 - Amazon Games Integration
 
 This plugin was created to import games owned in the Amazon Games App into the GOG Galaxy 2.0 Client.
-Allegedly this app could replace the official Twitch App to access games redeemed through Twitch Prime, although the latter is still supported.
+Allegedly this app could replace the official Twitch App to access games redeemed through Prime Gaming, although the latter is still supported.
 
 This plugin doesn't require any credentials, because it doesn't need to authenticate against an API. That's because Amazon uses a different, slightly complicated authentication scheme for their endpoints. _And because I don't want to be responsible for people losing their Amazon accounts because of this._
 
