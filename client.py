@@ -13,7 +13,6 @@ from utils import get_uninstall_programs_list
 class AmazonGamesClient:
     _CLIENT_NAME_ = 'Amazon Games'
     install_location = ""
-    _local_games_cache = list()
 
     def __init__(self):
         self._get_install_location()
@@ -68,13 +67,16 @@ class AmazonGamesClient:
             return Path(self.install_location, '..', 'Data', 'Games', 'Sql', 'GameProductInfo.sqlite').resolve()
 
     @property
+    def installed_games_db_path(self):
+        if self.install_location:
+            return Path(self.install_location, '..', 'Data', 'Games', 'Sql', 'GameInstallInfo.sqlite').resolve()
+
+    @property
     def cookies_path(self):
         if self.install_location:
             return os.path.join(self.install_location, "Electron3", "Cookies")
 
     def get_installed_games(self):
-        local_games_list = list()
-
         for program in get_uninstall_programs_list():
             if not program['UninstallString'] or 'Amazon Game Remover.exe'.lower() not in program['UninstallString'].lower():
                 # self.logger.info(f"LocalGame - UninstallString: {program['DisplayName']} {program['UninstallString']}")
@@ -86,19 +88,17 @@ class AmazonGamesClient:
 
             game_id = re.search(r'-p\s([a-z\d\-]+)', program['UninstallString'])[1]
             
-            if game_id:
-                local_games_list.append({
-                    'game_id': game_id,
-                    'program': program
-                })
+            yield {
+                'game_id': game_id,
+                'program': program
+            }
 
-        self._local_games_cache = local_games_list
-        return self._local_games_cache
-
+    # TODO: Get next "Amazon Games Remove.exe" with arguments "-m Game -p {game_id}"
     def uninstall_game(self, game_id):
-        for game in self._local_games_cache:
+        for game in self.get_installed_games():
             if game['game_id'] == game_id:
                 AmazonGamesClient._exec(game["program"]["UninstallString"])
+                break
 
     def start_client(self):
         if not self.is_running:
