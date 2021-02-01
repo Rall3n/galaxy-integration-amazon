@@ -135,12 +135,12 @@ class AmazonGamesPlugin(Plugin):
     def tick(self):
         self._client.update_install_location()
         if self._client.is_installed:
-            if self._owned_games_db and self._local_games_cache is not None:
+            if self._owned_games_db and self._owned_games_cache is not None:
+                self._update_owned_games()
+            
+            if self._local_games_db and self._local_games_cache is not None:
                 self._update_local_games()
             
-            if self._local_games_db and  self._owned_games_cache is not None:
-                self._update_owned_games()
-
     async def launch_game(self, game_id):
         AmazonGamesPlugin._scheme_command('play', game_id)
 
