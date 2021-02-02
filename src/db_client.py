@@ -10,5 +10,8 @@ class DBClient:
         with closing(sqlite3.connect(self.path)) as conn:
             conn.row_factory = sqlite3.Row
             with closing(conn.cursor()) as cursor:
-                cursor.execute(f'SELECT {", ".join(rows)} FROM {table} WHERE {where};')
-                return cursor.fetchall()
+                try:
+                    cursor.execute(f'SELECT {", ".join(rows)} FROM {table} WHERE {where};')
+                    return cursor.fetchall()
+                except sqlite3.DatabaseError as e:
+                    return []
