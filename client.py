@@ -93,7 +93,6 @@ class AmazonGamesClient:
                 'program': program
             }
 
-    # TODO: Get next "Amazon Games Remove.exe" with arguments "-m Game -p {game_id}"
     def uninstall_game(self, game_id):
         for game in self.get_installed_games():
             if game['game_id'] == game_id:

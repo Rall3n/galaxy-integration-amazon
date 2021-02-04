@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 import webbrowser
@@ -16,11 +17,14 @@ from authentication import create_next_step, START_URI, END_URI
 
 LOCAL_GAMES_TIMEOUT = (1 * 60)
 OWNED_GAMES_TIMEOUT = (10 * 60)
+FALLBACK_SYNC_TIMEOUT = (2.5 * 60)
 
 
 class AmazonGamesPlugin(Plugin):
     _owned_games_db = None
     _local_games_db = None
+    _owned_games_last_updated = 0
+    _local_games_last_updated = 0
 
     def __init__(self, reader, writer, token):
         super().__init__(Platform.Amazon, __version__, reader, writer, token)
@@ -29,7 +33,6 @@ class AmazonGamesPlugin(Plugin):
 
         self._local_games_cache = None
         self._owned_games_cache = None
-        self._owned_games_last_updated = self._local_games_last_updated = time()
 
     def _init_db(self):
         if not self._owned_games_db:
@@ -101,6 +104,20 @@ class AmazonGamesPlugin(Plugin):
     def _scheme_command(command, game_id):
         webbrowser.open(f'amazon-games://{command}/{game_id}')
 
+    async def _ensure_initialization(self):
+        await asyncio.sleep(FALLBACK_SYNC_TIMEOUT)
+
+        if not self._client.is_installed:
+            return
+
+        if not self._local_games_cache:
+            self.logger.info('Fallback initialization of `_local_games_cache`')
+            self._local_games_cache = {}
+
+        if not self._owned_games_cache:
+            self.logger.info('Fallback initialization of `_owned_games_cache`')
+            self._owned_games_cache = {}
+
     #
     # Galaxy Plugin methods
     #
@@ -117,29 +134,34 @@ class AmazonGamesPlugin(Plugin):
         if any(x in credentials['end_uri'] for x in ['splash_continue', 'missing_app_retry']):
             if not self._client.is_installed:
                 return create_next_step(START_URI.MISSING_APP, END_URI.MISSING_APP_RETRY)
-            
+
             return self._on_auth()
 
         return create_next_step(START_URI.SPLASH, END_URI.SPLASH_CONTINUE)
 
     async def get_owned_games(self):
         if self._owned_games_cache is None:
+            self._owned_games_last_updated = time()
             self._owned_games_cache = self._get_owned_games()
         return list(self._owned_games_cache.values())
 
     async def get_local_games(self):
         if self._local_games_cache is None:
+            self._local_games_last_updated = time()
             self._local_games_cache = self._get_local_games()
         return list(self._local_games_cache.values())
+
+    def handshake_complete(self) -> None:
+        self.create_task(self._ensure_initialization(), '_ensure_initialization')
 
     def tick(self):
         self._client.update_install_location()
         if self._client.is_installed:
-            if self._owned_games_db and self._local_games_cache is not None:
-                self._update_local_games()
-            
-            if self._local_games_db and  self._owned_games_cache is not None:
+            if self._owned_games_db and self._owned_games_cache is not None:
                 self._update_owned_games()
+
+            if self._local_games_db and self._local_games_cache is not None:
+                self._update_local_games()
 
     async def launch_game(self, game_id):
         AmazonGamesPlugin._scheme_command('play', game_id)
