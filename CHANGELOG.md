@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+- Add workaround for missing/delayed library synchronisation
+- Update splash wording in regards to end of game support in the Twitch App
+- Update dependencies
+- Fix switch of variables in library updates
+- Fix error in logs if database table does not exist
+
 ## 0.2.0
 - Replace "Twitch Prime" with "Prime Gaming"
 - Add timeout for library updates
