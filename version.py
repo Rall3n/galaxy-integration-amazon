@@ -1,6 +1,9 @@
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 __changelog__ = {
+    "0.3.1": '''
+        - Security: Update `aiohttp` dependency
+    ''',
     "0.3.0": '''
         - Add workaround for missing/delayed library synchronisation
         - Update splash wording in regards to end of game support in the Twitch App

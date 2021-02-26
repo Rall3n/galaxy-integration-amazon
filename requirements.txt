@@ -1,2 +1,3 @@
+aiohttp==3.7.4
 galaxy.plugin.api==0.67.0
 psutil==5.8.0
