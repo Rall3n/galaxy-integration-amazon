@@ -99,3 +99,10 @@ class AmazonGamesClient:
     def stop_client(self):
         if self.is_running:
             AmazonGamesClient._exec(f'taskkill /t /f /im "Amazon Games.exe"')
+
+    def game_running(self, game_id):
+        for game in self.get_installed_games():
+            if game['game_id'] == game_id:
+                for proc in process_iter():
+                    if proc.binary_path and game['program']['InstallLocation'] in proc.binary_path:
+                        return True

@@ -93,6 +93,9 @@ class AmazonGamesPlugin(Plugin):
             self.update_local_game_status(LocalGame(game_id, LocalGameState.None_))
 
         for game_id, local_game in local_games.items():
+            if self._client.game_running(game_id):
+                local_game.local_game_state |= LocalGameState.Running
+
             old_game = self._local_games_cache.get(game_id)
             if old_game is None or old_game.local_game_state != local_game.local_game_state:
                 self.update_local_game_status(local_game)
