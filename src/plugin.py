@@ -1,14 +1,13 @@
 import asyncio
 import logging
 import sys
-from typing import List
 import webbrowser
-
-from time import time
 
 from galaxy.api.plugin import Plugin, create_and_run_plugin
 from galaxy.api.consts import Feature, Platform, LicenseType, LocalGameState, OSCompatibility
 from galaxy.api.types import Authentication, Game, LicenseInfo, LocalGame
+from time import time
+from typing import List
 
 from version import __version__
 from client import AmazonGamesClient
