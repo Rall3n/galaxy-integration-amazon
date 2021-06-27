@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+- Added `Running` state to local games
+- Fixed app not closing after game closes
+- Removed `InstallGame` feature due to no known way available to start the installation from outside the app
+- Small improvements regarding registry access
+
 ## 0.3.1
 - Security: Update `aiohttp` dependency
 
