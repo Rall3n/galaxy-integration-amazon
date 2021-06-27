@@ -16,9 +16,7 @@ class AmazonGamesClient:
         self._get_install_location()
 
     def _get_install_location(self):
-        programs = get_uninstall_programs_list()
-
-        for program in programs:
+        for program in get_uninstall_programs_list():
             if program['DisplayName'] == self._CLIENT_NAME_:
                 self.install_location = Path(program['InstallLocation']).resolve()
                 break
