@@ -1,32 +1,28 @@
-import errno
 import os
-import sys
-import subprocess
 import re
-import logging
-import psutil
+import subprocess
 
+from galaxy.proc_tools import process_iter
 from pathlib import Path
 
 from utils import get_uninstall_programs_list
 
+
 class AmazonGamesClient:
     _CLIENT_NAME_ = 'Amazon Games'
-    install_location = ""
+    install_location: Path = None
 
     def __init__(self):
         self._get_install_location()
 
     def _get_install_location(self):
-        programs = get_uninstall_programs_list()
-
-        for program in programs:
+        for program in get_uninstall_programs_list():
             if program['DisplayName'] == self._CLIENT_NAME_:
-                self.install_location = program['InstallLocation']
+                self.install_location = Path(program['InstallLocation']).resolve()
                 break
 
     def update_install_location(self):
-        if not self.install_location or not Path(self.install_location).resolve().exists():
+        if not self.install_location or not self.install_location.exists():
             self._get_install_location()
 
 
@@ -36,54 +32,49 @@ class AmazonGamesClient:
             args,
             creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW,
             cwd=cwd,
-            shell=True
+            shell=False
         )
 
     @property
     def is_installed(self):
-        if (not self.install_location or not os.path.exists(self.install_location)):
-            return False
-        else:
-            return True
+        return self.install_location and self.install_location.exists()
     
     @property
     def is_running(self):
-        for proc in psutil.process_iter(attrs=['exe'], ad_value=''):
-            if proc.info['exe'] == self.exec_path:
+        for proc in process_iter():
+            if proc.binary_path and Path(proc.binary_path).resolve() == self.exec_path:
                 return True
 
         return False
 
     @property
     def exec_path(self):
-        if self.install_location:
-            return os.path.join(self.install_location, "App", "Amazon Games.exe")
-        else:
-            return ""
+        if not self.install_location:
+            return ''
+
+        return self.install_location.joinpath("Amazon Games.exe")
 
     @property
     def owned_games_db_path(self):
         if self.install_location:
-            return Path(self.install_location, '..', 'Data', 'Games', 'Sql', 'GameProductInfo.sqlite').resolve()
+            return self.install_location.joinpath('..', 'Data', 'Games', 'Sql', 'GameProductInfo.sqlite').resolve()
 
     @property
     def installed_games_db_path(self):
         if self.install_location:
-            return Path(self.install_location, '..', 'Data', 'Games', 'Sql', 'GameInstallInfo.sqlite').resolve()
+            return self.install_location.joinpath('..', 'Data', 'Games', 'Sql', 'GameInstallInfo.sqlite').resolve()
 
     @property
     def cookies_path(self):
         if self.install_location:
-            return os.path.join(self.install_location, "Electron3", "Cookies")
+            return self.install_location.joinpath("Electron3", "Cookies")
 
     def get_installed_games(self):
         for program in get_uninstall_programs_list():
             if not program['UninstallString'] or 'Amazon Game Remover.exe'.lower() not in program['UninstallString'].lower():
-                # self.logger.info(f"LocalGame - UninstallString: {program['DisplayName']} {program['UninstallString']}")
                 continue
             
             if not os.path.exists(os.path.abspath(program['InstallLocation'])):
-                # self.logger.info(f"LocalGame - InstallLocation: {program['DisplayName']} {program['InstallLocation']}")
                 continue
 
             game_id = re.search(r'-p\s([a-z\d\-]+)', program['UninstallString'])[1]
@@ -105,9 +96,11 @@ class AmazonGamesClient:
 
     def stop_client(self):
         if self.is_running:
-            for proc in psutil.process_iter(attrs=['exe'], ad_value=''):
-                if proc.info['exe'] == self.exec_path:
-                    for child in proc.children():
-                        child.terminate()
-                    proc.terminate()
-                    break
+            AmazonGamesClient._exec(f'taskkill /t /f /im "Amazon Games.exe"')
+
+    def game_running(self, game_id):
+        for game in self.get_installed_games():
+            if game['game_id'] == game_id:
+                for proc in process_iter():
+                    if proc.binary_path and game['program']['InstallLocation'] in proc.binary_path:
+                        return True

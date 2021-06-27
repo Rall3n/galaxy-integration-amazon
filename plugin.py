@@ -3,11 +3,11 @@ import logging
 import sys
 import webbrowser
 
-from time import time
-
 from galaxy.api.plugin import Plugin, create_and_run_plugin
-from galaxy.api.consts import Platform, LicenseType, LocalGameState, OSCompatibility
+from galaxy.api.consts import Feature, Platform, LicenseType, LocalGameState, OSCompatibility
 from galaxy.api.types import Authentication, Game, LicenseInfo, LocalGame
+from time import time
+from typing import List
 
 from version import __version__
 from client import AmazonGamesClient
@@ -93,6 +93,9 @@ class AmazonGamesPlugin(Plugin):
             self.update_local_game_status(LocalGame(game_id, LocalGameState.None_))
 
         for game_id, local_game in local_games.items():
+            if self._client.game_running(game_id):
+                local_game.local_game_state |= LocalGameState.Running
+
             old_game = self._local_games_cache.get(game_id)
             if old_game is None or old_game.local_game_state != local_game.local_game_state:
                 self.update_local_game_status(local_game)
@@ -166,10 +169,6 @@ class AmazonGamesPlugin(Plugin):
     async def launch_game(self, game_id):
         AmazonGamesPlugin._scheme_command('play', game_id)
 
-    async def install_game(self, game_id):
-        # FIXME Opens launcher and an install dialog, but no action
-        AmazonGamesPlugin._scheme_command('play', game_id)
-
     async def uninstall_game(self, game_id):
         self.logger.info(f'Uninstalling game {game_id}')
         self._client.uninstall_game(game_id)
@@ -183,6 +182,10 @@ class AmazonGamesPlugin(Plugin):
     async def get_os_compatibility(self, game_id, context):
         return OSCompatibility.Windows
 
+    @property
+    def features(self) -> List[Feature]:
+        # As we can't remove the `install_game` method, we just skip the `Feature` from the features list
+        return [x for x in list(self._features) if x not in [Feature.InstallGame]]
 
 def main():
     create_and_run_plugin(AmazonGamesPlugin, sys.argv)
