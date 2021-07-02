@@ -1,11 +1,14 @@
 import asyncio
+import json
 import logging
+import os
+import subprocess
 import sys
 import webbrowser
 
 from galaxy.api.plugin import Plugin, create_and_run_plugin
 from galaxy.api.consts import Feature, Platform, LicenseType, LocalGameState, OSCompatibility
-from galaxy.api.types import Authentication, Game, LicenseInfo, LocalGame
+from galaxy.api.types import Authentication, Game, GameTime, LicenseInfo, LocalGame
 from time import time
 from typing import List
 
@@ -30,9 +33,12 @@ class AmazonGamesPlugin(Plugin):
         super().__init__(Platform.Amazon, __version__, reader, writer, token)
         self.logger = logging.getLogger('amazonPlugin')
         self._client = AmazonGamesClient()
-
+        
         self._local_games_cache = None
         self._owned_games_cache = None
+        self.proc = None
+        self.running_game_id = ""
+        self.tick_count = 0
 
     def _init_db(self):
         if not self._owned_games_db:
@@ -103,9 +109,57 @@ class AmazonGamesPlugin(Plugin):
         self._local_games_cache = local_games
         self._local_games_last_updated = time()
 
+    async def prepare_game_times_context(self, game_ids):
+        return self._get_games_times_dict()
+
+    async def get_game_time(self, game_id, context):
+        game_time = context.get(game_id)
+        return game_time
+
+
+    def _get_games_times_dict(self) -> dict:
+        ''' Returns a dict of GameTime objects
+        
+        Creates and reads the game_times.json file
+        '''
+        game_times = {}
+        path = os.path.expandvars(r"%LOCALAPPDATA%\GOG.com\Galaxy\Configuration\plugins\amazon\game_times.json")
+        update_file = False
+
+        # Read the games times json
+        try:
+            with open(path, encoding="utf-8") as game_times_file:
+                data = json.load(game_times_file)
+        except FileNotFoundError:
+            data = {}
+
+            if not os.path.isdir(os.path.dirname(path)):
+                os.makedirs(os.path.dirname(path))
+                
+            with open(path, "w", encoding="utf-8") as game_times_file:
+                json.dump(data, game_times_file, indent=4)
+
+        for game in self._local_games_cache:
+            if game.id in data:
+                time_played = data.get(game.id).get("time_played")
+                last_time_played = data.get(game.id).get("last_time_played")
+            else:
+                time_played = 0
+                last_time_played = None
+                data[game.id] = { "name": game.name, "time_played": 0, "last_time_played": None }
+                update_file = True
+            
+            game_times[game.id] = GameTime(game.id, time_played, last_time_played)
+
+        if update_file == True:
+            with open(path, "w", encoding="utf-8") as game_times_file:
+                json.dump(data, game_times_file, indent=4)
+        
+        return game_times
+
     @staticmethod
     def _scheme_command(command, game_id):
-        webbrowser.open(f'amazon-games://{command}/{game_id}')
+        self.proc = subprocess.Popen(webbrowser.open(f'amazon-games://{command}/{game_id}'))
 
     async def _ensure_initialization(self):
         await asyncio.sleep(FALLBACK_SYNC_TIMEOUT)
@@ -158,6 +212,8 @@ class AmazonGamesPlugin(Plugin):
         self.create_task(self._ensure_initialization(), '_ensure_initialization')
 
     def tick(self):
+        self.tick_count += 1
+        self._check_game_status
         self._client.update_install_location()
         if self._client.is_installed:
             if self._owned_games_db and self._owned_games_cache is not None:
@@ -166,8 +222,50 @@ class AmazonGamesPlugin(Plugin):
             if self._local_games_db and self._local_games_cache is not None:
                 self._update_local_games()
 
+            if self.tick_count % 12 == 0:
+                self._update_all_game_times()
+
+    def _check_game_status(self) -> None:
+        try:
+            if self.proc.poll() is not None:
+                self._client._set_session_end()
+                session_duration = self._client._get_session_duration()
+                last_time_played = int(time.time())
+                self._update_game_time(self.running_game_id, session_duration, last_time_played)
+                self.proc = None
+                self.running_game_id = ""
+        except AttributeError:
+            pass
+    
+    async def _update_all_game_times(self) -> None:
+        loop = asyncio.get_running_loop()
+        new_game_times = await loop.run_in_executor(None, self._get_games_times_dict)
+        for game_time in new_game_times:
+            self.update_game_time(new_game_times[game_time])
+
+
+    def _update_game_time(self, game_id, session_duration, last_time_played) -> None:
+        ''' Returns None 
+        
+        Update the game time of a single game
+        '''
+        path = os.path.expandvars(r"%LOCALAPPDATA%\GOG.com\Galaxy\Configuration\plugins\amazon\game_times.json")
+
+        with open(path, encoding="utf-8") as game_times_file:
+            data = json.load(game_times_file)
+
+        data[game_id]["time_played"] = data.get(game_id).get("time_played") + session_duration
+        data[game_id]["last_time_played"] = last_time_played
+
+        with open(path, "w", encoding="utf-8") as game_times_file:
+            json.dump(data, game_times_file, indent=4)
+
+        self.update_game_time(GameTime(game_id, data.get(game_id).get("time_played"), last_time_played))
+
     async def launch_game(self, game_id):
         AmazonGamesPlugin._scheme_command('play', game_id)
+        self.running_game_id = game_id
+        self._client._set_session_start()
 
     async def uninstall_game(self, game_id):
         self.logger.info(f'Uninstalling game {game_id}')

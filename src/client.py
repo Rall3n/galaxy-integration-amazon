@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import time
 
 from galaxy.proc_tools import process_iter
 from pathlib import Path
@@ -104,3 +105,15 @@ class AmazonGamesClient:
                 for proc in process_iter():
                     if proc.binary_path and game['program']['InstallLocation'] in proc.binary_path:
                         return True
+    
+    def _set_session_start(self) -> None:
+        ''' Sets the session start to the current time'''
+        self.start_time = time.time()
+
+    def _set_session_end(self) -> None:
+        ''' Sets the session end to the current time'''
+        self.end_time = time.time()
+
+    def _get_session_duration(self) -> int:
+        ''' Returns the duration of the game session in minutes as an int'''
+        return int(round((self.end_time - self.start_time) / 60))
