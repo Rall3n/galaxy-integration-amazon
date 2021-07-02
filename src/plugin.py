@@ -139,17 +139,17 @@ class AmazonGamesPlugin(Plugin):
             with open(path, "w", encoding="utf-8") as game_times_file:
                 json.dump(data, game_times_file, indent=4)
 
-        for game in self._local_games_cache:
-            if game.id in data:
-                time_played = data.get(game.id).get("time_played")
-                last_time_played = data.get(game.id).get("last_time_played")
+        for game_id in self._local_games_cache.keys():
+            if game_id in data:
+                time_played = data.get(game_id).get("time_played")
+                last_time_played = data.get(game_id).get("last_time_played")
             else:
                 time_played = 0
                 last_time_played = None
-                data[game.id] = { "name": game.name, "time_played": 0, "last_time_played": None }
+                data[game_id] = { "time_played": 0, "last_time_played": None }
                 update_file = True
             
-            game_times[game.id] = GameTime(game.id, time_played, last_time_played)
+            game_times[game_id] = GameTime(game_id, time_played, last_time_played)
 
         if update_file == True:
             with open(path, "w", encoding="utf-8") as game_times_file:
