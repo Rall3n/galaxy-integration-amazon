@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import subprocess
 import sys
 import webbrowser
 
@@ -36,7 +35,6 @@ class AmazonGamesPlugin(Plugin):
         
         self._local_games_cache = None
         self._owned_games_cache = None
-        self.proc = None
         self.running_game_id = ""
         self.tick_count = 0
 
@@ -159,7 +157,7 @@ class AmazonGamesPlugin(Plugin):
 
     @staticmethod
     def _scheme_command(command, game_id):
-        self.proc = subprocess.Popen(webbrowser.open(f'amazon-games://{command}/{game_id}'))
+        webbrowser.open(f'amazon-games://{command}/{game_id}')
 
     async def _ensure_initialization(self):
         await asyncio.sleep(FALLBACK_SYNC_TIMEOUT)
@@ -213,7 +211,6 @@ class AmazonGamesPlugin(Plugin):
 
     def tick(self):
         self.tick_count += 1
-        self._check_game_status
         self._client.update_install_location()
         if self._client.is_installed:
             if self._owned_games_db and self._owned_games_cache is not None:
@@ -225,16 +222,15 @@ class AmazonGamesPlugin(Plugin):
             if self.tick_count % 12 == 0:
                 self._update_all_game_times()
 
-    def _check_game_status(self) -> None:
+    def _finalize_game_session(self) -> None:
         try:
-            if self.proc.poll() is not None:
-                self._client._set_session_end()
-                session_duration = self._client._get_session_duration()
-                last_time_played = int(time.time())
-                self._update_game_time(self.running_game_id, session_duration, last_time_played)
-                self.proc = None
-                self.running_game_id = ""
-        except AttributeError:
+            self._client._set_session_end()
+            session_duration = self._client._get_session_duration()
+            last_time_played = int(time())
+            self._update_game_time(self.running_game_id, session_duration, last_time_played)
+            self.running_game_id = ""
+        except AttributeError as error:
+            self.logger.info(error)
             pass
     
     async def _update_all_game_times(self) -> None:
@@ -275,6 +271,7 @@ class AmazonGamesPlugin(Plugin):
         self._client.start_client()
 
     async def shutdown_platform_client(self):
+        self._finalize_game_session()
         self._client.stop_client()
 
     async def get_os_compatibility(self, game_id, context):
