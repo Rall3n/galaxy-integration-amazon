@@ -25,6 +25,7 @@ class AmazonGamesPlugin(Plugin):
     _local_games_db = None
     _owned_games_last_updated = 0
     _local_games_last_updated = 0
+    _auth = False
 
     def __init__(self, reader, writer, token):
         super().__init__(Platform.Amazon, __version__, reader, writer, token)
@@ -44,9 +45,21 @@ class AmazonGamesPlugin(Plugin):
     def _on_auth(self):
         self.logger.info("Auth finished")
         self._init_db()
+        self._auth = True
 
         self.store_credentials({ 'creds': 'dummy_data_because_local_app' })
         return Authentication('amazon_user_id', 'Amazon Games User')
+
+    async def _auth_finished(self):
+        start = time()
+
+        while (time() - 15 <= start):
+            if (self._auth):
+                return True
+            
+            await asyncio.sleep(0.5)
+
+        return False
 
     def _get_owned_games(self):
         try:
@@ -149,6 +162,12 @@ class AmazonGamesPlugin(Plugin):
         return list(self._owned_games_cache.values())
 
     async def get_local_games(self):
+        # Since 2.0.38 Beta of the client `get_local_games` is called before auth is finished.
+        # Problematic, as databases are set on auth.
+        # So we wait until we have been authenticated.
+        if not await self._auth_finished():
+            return []
+
         if self._local_games_cache is None:
             self._local_games_last_updated = time()
             self._local_games_cache = self._get_local_games()
