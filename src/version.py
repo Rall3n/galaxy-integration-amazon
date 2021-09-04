@@ -1,6 +1,9 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 __changelog__ = {
+    "0.4.1": '''
+        - Fixed non critial error when trying to import local games
+    ''',
     "0.4.0": '''
         - Added `Running` state to local games
         - Fixed app not closing after game closes
