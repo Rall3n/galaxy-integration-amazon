@@ -156,6 +156,10 @@ class AmazonGamesPlugin(Plugin):
         return create_next_step(START_URI.SPLASH, END_URI.SPLASH_CONTINUE)
 
     async def get_owned_games(self):
+        # Same as `get_local_games`
+        if not await self._auth_finished():
+            return []
+
         if self._owned_games_cache is None:
             self._owned_games_last_updated = time()
             self._owned_games_cache = self._get_owned_games()
