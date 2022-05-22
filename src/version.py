@@ -1,6 +1,9 @@
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 __changelog__ = {
+    "0.4.3": '''
+        - Extended logging to log db errors
+    ''',
     "0.4.2": '''
         - Fixed another non critical error when trying to import owned games
     ''',

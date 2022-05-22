@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.3
+- Extended logging to log db errors
+
 ## 0.4.2
 - Fixed another non critical error when trying to import owned games
 
