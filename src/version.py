@@ -1,6 +1,9 @@
-__version__ = "0.4.3"
+__version__ = "0.5.0"
 
 __changelog__ = {
+    "0.5.0": '''
+        - Compatability with latest Amazon Games App version introducing a new library database
+    ''',
     "0.4.3": '''
         - Extended logging to log db errors
     ''',

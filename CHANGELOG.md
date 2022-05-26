@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.0
+- Compatability with latest Amazon Games App version introducing a new library database
+
 ## 0.4.3
 - Extended logging to log db errors
 
