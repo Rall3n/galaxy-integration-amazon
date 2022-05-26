@@ -1,6 +1,9 @@
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 __changelog__ = {
+    "0.4.2": '''
+        - Fixed another non critical error when trying to import owned games
+    ''',
     "0.4.1": '''
         - Fixed non critial error when trying to import local games
     ''',
