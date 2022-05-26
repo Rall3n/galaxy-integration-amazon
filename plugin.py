@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import sys
 import webbrowser
@@ -13,6 +14,7 @@ from version import __version__
 from client import AmazonGamesClient
 from db_client import DBClient
 from authentication import create_next_step, START_URI, END_URI
+from utils import crypt_unprotect_data
 
 
 LOCAL_GAMES_TIMEOUT = (1 * 60)
@@ -26,6 +28,7 @@ class AmazonGamesPlugin(Plugin):
     _owned_games_last_updated = 0
     _local_games_last_updated = 0
     _auth = False
+    _uses_entitlements = False
 
     def __init__(self, reader, writer, token):
         super().__init__(Platform.Amazon, __version__, reader, writer, token)
@@ -37,7 +40,15 @@ class AmazonGamesPlugin(Plugin):
 
     def _init_db(self):
         if not self._owned_games_db:
-            self._owned_games_db = DBClient(self._client.owned_games_db_path)
+            entitlements_db_path = self._client.entitlements_db_path
+
+            if entitlements_db_path and entitlements_db_path.exists():
+                self.logger.info('Uses new "Entitlements.sqlite" database')
+                self._uses_entitlements = True
+                self._owned_games_db = DBClient(entitlements_db_path)
+            else:
+                # TODO: Remove in later release
+                self._owned_games_db = DBClient(self._client.owned_games_db_path)
 
         if not self._local_games_db:
             self._local_games_db = DBClient(self._client.installed_games_db_path)
@@ -63,9 +74,15 @@ class AmazonGamesPlugin(Plugin):
 
     def _get_owned_games(self):
         try:
+            if self._uses_entitlements:
+                game_data = map(json.loads, [crypt_unprotect_data(x['value']) for x in self._owned_games_db.select('game_entitlements', rows=['value'])])
+            else:
+                # TODO: Remove in later release
+                game_data = self._owned_games_db.select('DbSet', rows=['ProductIdStr', 'ProductTitle'])
+
             return {
                 row['ProductIdStr']: Game(row['ProductIdStr'], row['ProductTitle'], dlcs=None, license_info=LicenseInfo(LicenseType.SinglePurchase))
-                for row in self._owned_games_db.select('DbSet', rows=['ProductIdStr', 'ProductTitle'])
+                for row in game_data
             }
         except Exception:
             self.logger.exception('Failed to get owned games')

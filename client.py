@@ -60,6 +60,11 @@ class AmazonGamesClient:
             return self.install_location.joinpath('..', 'Data', 'Games', 'Sql', 'GameProductInfo.sqlite').resolve()
 
     @property
+    def entitlements_db_path(self):
+        if self.install_location:
+            return self.install_location.joinpath('..', 'Data', 'Games', 'Sql', 'Entitlements.sqlite').resolve()
+
+    @property
     def installed_games_db_path(self):
         if self.install_location:
             return self.install_location.joinpath('..', 'Data', 'Games', 'Sql', 'GameInstallInfo.sqlite').resolve()
