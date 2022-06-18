@@ -8,7 +8,7 @@ This plugin doesn't require any credentials, because it doesn't need to authenti
 ## Installation
 
 Get the corresponding zip archive for your OS from the [latest releases](https://github.com/Rall3n/galaxy-integration-amazon/releases/latest) and extract the contents into a seperate folder in the dedicated plugin directory:
-* Windows: `C:\Users\%username%\AppData\Local\GOG.com\Galaxy\plugins\installed`
+* Windows: `%LOCALAPPDATA%\GOG.com\Galaxy\plugins\installed`
 * ~~MacOS~~: _Due to lack of hardware no support_
 
 ## Development
