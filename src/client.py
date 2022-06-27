@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import subprocess
@@ -34,6 +35,10 @@ class AmazonGamesClient:
             cwd=cwd,
             shell=False
         )
+
+    async def _aexec(self, args, cwd=None):
+        proc = await asyncio.create_subprocess_exec(*args)
+        return await proc.wait()
 
     @property
     def is_installed(self):
@@ -74,6 +79,11 @@ class AmazonGamesClient:
         if self.install_location:
             return self.install_location.joinpath("Electron3", "Cookies")
 
+    @property
+    def remover(self):
+        if self.install_location:
+            return self.install_location.joinpath('Amazon Games Services', 'Fuel', 'helpers', 'Amazon Game Remover.exe')
+
     def get_installed_games(self):
         for program in get_uninstall_programs_list():
             if not program['UninstallString'] or 'Amazon Game Remover.exe'.lower() not in program['UninstallString'].lower():
@@ -89,11 +99,9 @@ class AmazonGamesClient:
                 'program': program
             }
 
-    def uninstall_game(self, game_id):
-        for game in self.get_installed_games():
-            if game['game_id'] == game_id:
-                AmazonGamesClient._exec(game["program"]["UninstallString"])
-                break
+    async def uninstall_game(self, game_id):
+        return_code = await self._aexec([f'{self.remover}', '-m', 'Game', '-p', game_id])
+        return True if return_code == 0 else False
 
     def start_client(self):
         if not self.is_running:

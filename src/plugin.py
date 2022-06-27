@@ -219,7 +219,10 @@ class AmazonGamesPlugin(Plugin):
 
     async def uninstall_game(self, game_id):
         self.logger.info(f'Uninstalling game {game_id}')
-        self._client.uninstall_game(game_id)
+        result = await self._client.uninstall_game(game_id)
+        if result:
+            self.update_local_game_status(LocalGame(game_id, LocalGameState.None_))
+            self._local_games_cache.pop(game_id)
 
     async def launch_platform_client(self):
         self._client.start_client()
