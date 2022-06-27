@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2
+- Fixed library not being properly updated as result of missing game title
+- Fixed game uninstall not working
+
 ## 0.5.1
 - Fixed library games not being updated/shown
 
