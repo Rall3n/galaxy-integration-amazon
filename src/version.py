@@ -1,6 +1,9 @@
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 __changelog__ = {
+    "0.5.1": '''
+        - Fixed library games not being updated/shown
+    ''',
     "0.5.0": '''
         - Compatability with latest Amazon Games App version introducing a new library database
     ''',

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.1
+- Fixed library games not being updated/shown
+
 ## 0.5.0
 - Compatability with latest Amazon Games App version introducing a new library database
 
