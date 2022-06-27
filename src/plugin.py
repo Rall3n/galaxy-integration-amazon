@@ -72,6 +72,14 @@ class AmazonGamesPlugin(Plugin):
 
         return False
 
+    def _title_wrapper(self, title: str, game_id: str):
+        if title:
+            return title
+
+        self.logger.warning('Missing title for game_id "%s". Using placeholder title.', game_id)
+
+        return f'Amzn Game ({game_id.split(".")[-1]})'
+
     def _get_owned_games(self):
         try:
             if self._uses_entitlements:
@@ -81,7 +89,7 @@ class AmazonGamesPlugin(Plugin):
                 game_data = self._owned_games_db.select('DbSet', rows=['ProductIdStr', 'ProductTitle'])
 
             return {
-                row['ProductIdStr']: Game(row['ProductIdStr'], row['ProductTitle'] if row['ProductTitle'] else '', dlcs=None, license_info=LicenseInfo(LicenseType.SinglePurchase))
+                row['ProductIdStr']: Game(row['ProductIdStr'], self._title_wrapper(row['ProductTitle'], row['ProductIdStr']), dlcs=None, license_info=LicenseInfo(LicenseType.SinglePurchase))
                 for row in game_data
             }
         except Exception:
