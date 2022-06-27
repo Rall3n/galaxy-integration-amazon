@@ -1,8 +1,8 @@
 {
-    "tag": "v0.5.0",
+    "tag": "v0.5.1",
     "assets": [
         {
-            "browser_download_url": "https://github.com/Rall3n/galaxy-integration-amazon/releases/download/v0.5.0/windows.zip",
+            "browser_download_url": "https://github.com/Rall3n/galaxy-integration-amazon/releases/download/v0.5.1/windows.zip",
             "name": "windows.zip"
         }
     ]
