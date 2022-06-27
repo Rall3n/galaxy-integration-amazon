@@ -75,13 +75,13 @@ class AmazonGamesPlugin(Plugin):
     def _get_owned_games(self):
         try:
             if self._uses_entitlements:
-                game_data = map(json.loads, [crypt_unprotect_data(x['value']) for x in self._owned_games_db.select('game_entitlements', rows=['value'])])
+                game_data = list(map(json.loads, [crypt_unprotect_data(x['value']) for x in self._owned_games_db.select('game_entitlements', rows=['value'])]))
             else:
                 # TODO: Remove in later release
                 game_data = self._owned_games_db.select('DbSet', rows=['ProductIdStr', 'ProductTitle'])
 
             return {
-                row['ProductIdStr']: Game(row['ProductIdStr'], row['ProductTitle'], dlcs=None, license_info=LicenseInfo(LicenseType.SinglePurchase))
+                row['ProductIdStr']: Game(row['ProductIdStr'], row['ProductTitle'] if row['ProductTitle'] else '', dlcs=None, license_info=LicenseInfo(LicenseType.SinglePurchase))
                 for row in game_data
             }
         except Exception:
