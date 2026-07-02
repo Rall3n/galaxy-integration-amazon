@@ -5,16 +5,16 @@ verify_ssl = true
 
 [dev-packages]
 invoke = "*"
-"fog.buildtools" = "*"
+"fog.buildtools" = "~=1.0.3"
 termcolor = "*"
 pylint = "*"
 
 [packages]
-"galaxy.plugin.api" = "*"
+"galaxy.plugin.api" = ">=0.71"
 psutil = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.13"
 
 [scripts]
 build = "inv build"
