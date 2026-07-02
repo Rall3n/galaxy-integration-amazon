@@ -56,7 +56,7 @@ def build(c, output=str(DIST_PATH)):
         shutil.rmtree(output, ignore_errors=True)
 
         with tempfile.NamedTemporaryFile(mode="r+", delete=False) as pipenvLockTmp:
-            pipenvLockTmp.write(c.run('pipenv lock -r', hide=True).stdout)
+            pipenvLockTmp.write(c.run('pipenv requirements', hide=True).stdout)
             pipenvLockTmp.seek(0)
 
         with tempfile.NamedTemporaryFile(mode="w+", delete=False) as pipReqTmp:
@@ -67,8 +67,8 @@ def build(c, output=str(DIST_PATH)):
             'pip', 'install',
             '-r', pipReqTmp.name,
             '--platform', PIP_PLATFORM,
-            '--target', out_path.as_posix(),
-            '--python-version', '37',
+            '--target', f'"{out_path.as_posix()}"',
+            '--python-version', '313',
             '--no-compile',
             '--no-deps'
         ]
