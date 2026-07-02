@@ -2,9 +2,10 @@ import asyncio
 import os
 import re
 import subprocess
+import webbrowser
+from pathlib import Path
 
 from galaxy.proc_tools import process_iter
-from pathlib import Path
 
 from utils import get_uninstall_programs_list
 
@@ -53,11 +54,26 @@ class AmazonGamesClient:
         return False
 
     @property
+    def is_ui_initialized(self):
+        for proc in process_iter():
+            if proc.binary_path and Path(proc.binary_path).resolve() == self.exec_path_ui:
+                return True
+
+        return False
+
+    @property
     def exec_path(self):
         if not self.install_location:
             return ''
 
         return self.install_location.joinpath("Amazon Games.exe")
+
+    @property
+    def exec_path_ui(self):
+        if not self.install_location:
+            return ''
+
+        return self.install_location.joinpath("Amazon Games UI","Amazon Games UI.exe")
 
     @property
     def owned_games_db_path(self):
@@ -98,6 +114,9 @@ class AmazonGamesClient:
                 'game_id': game_id,
                 'program': program
             }
+
+    async def install_game(self, game_id):
+        return webbrowser.open(f'amazon-games://install/{game_id}')
 
     async def uninstall_game(self, game_id):
         return_code = await self._aexec([f'{self.remover}', '-m', 'Game', '-p', game_id])

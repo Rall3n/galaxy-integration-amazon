@@ -3,19 +3,17 @@ import json
 import logging
 import sys
 import webbrowser
-
-from galaxy.api.plugin import Plugin, create_and_run_plugin
-from galaxy.api.consts import Feature, Platform, LicenseType, LocalGameState, OSCompatibility
-from galaxy.api.types import Authentication, Game, LicenseInfo, LocalGame
 from time import time
-from typing import List
 
-from version import __version__
+from galaxy.api.consts import Platform, LicenseType, LocalGameState, OSCompatibility
+from galaxy.api.plugin import Plugin, create_and_run_plugin
+from galaxy.api.types import Authentication, Game, LicenseInfo, LocalGame
+
+from authentication import create_next_step, START_URI, END_URI
 from client import AmazonGamesClient
 from db_client import DBClient
-from authentication import create_next_step, START_URI, END_URI
 from utils import crypt_unprotect_data
-
+from version import __version__
 
 LOCAL_GAMES_TIMEOUT = (1 * 60)
 OWNED_GAMES_TIMEOUT = (10 * 60)
@@ -217,6 +215,23 @@ class AmazonGamesPlugin(Plugin):
     async def launch_game(self, game_id):
         AmazonGamesPlugin._scheme_command('play', game_id)
 
+    async def install_game(self, game_id: str) -> None:
+        self.logger.info(f'Installing game {game_id}')
+        launcher_just_started = False
+        if not self._client.is_running:
+            self._client.start_client()
+            launcher_just_started = True
+
+        while not (self._client.is_running and self._client.is_ui_initialized):
+            self.logger.info(f'Waiting for client to finish initialization...')
+            await asyncio.sleep(1)
+
+        if launcher_just_started:
+            # Wait a bit longer since it may still not accept incoming installation requests
+            await asyncio.sleep(10)
+        self.logger.info(f'Launch install dialog')
+        await self._client.install_game(game_id)
+
     async def uninstall_game(self, game_id):
         self.logger.info(f'Uninstalling game {game_id}')
         result = await self._client.uninstall_game(game_id)
@@ -233,10 +248,6 @@ class AmazonGamesPlugin(Plugin):
     async def get_os_compatibility(self, game_id, context):
         return OSCompatibility.Windows
 
-    @property
-    def features(self) -> List[Feature]:
-        # As we can't remove the `install_game` method, we just skip the `Feature` from the features list
-        return [x for x in list(self._features) if x not in [Feature.InstallGame]]
 
 def main():
     create_and_run_plugin(AmazonGamesPlugin, sys.argv)
