@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.7.0
-- Support for GOG Galaxy 2.1 version
+- Support for GOG Galaxy 2.1 version (@pippo-san)
 
 ## 0.6.0
 - Re-enable install game feature of plugin
