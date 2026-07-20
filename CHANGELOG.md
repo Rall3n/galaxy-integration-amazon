@@ -1,6 +1,9 @@
 # Changelog
 
-## 0.6.0:
+## 0.7.0
+- Support for GOG Galaxy 2.1 version
+
+## 0.6.0
 - Re-enable install game feature of plugin
 
 ## 0.5.2
